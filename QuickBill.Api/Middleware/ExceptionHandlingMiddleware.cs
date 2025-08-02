@@ -1,4 +1,5 @@
 ﻿using log4net;
+using QuickBill.Domain.Models.Common;
 using System.Net;
 
 
@@ -29,14 +30,16 @@ namespace QuickBill.Api.Middleware
                 httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 httpContext.Response.ContentType = "application/json";
 
-                var errorResponse = new
+                var response = new ApiResponse<string>
                 {
-                    success = false,
-                    message = "Something went wrong. Please try again later.",
-                    error = ex.Message
+                    Status = "Error",
+                    Code = Convert.ToInt32(HttpStatusCode.InternalServerError),
+                    Message = ex.Message,
+                    Data = null,
+                    Timestamp = DateTime.UtcNow
                 };
 
-                await httpContext.Response.WriteAsJsonAsync(errorResponse);
+                await httpContext.Response.WriteAsJsonAsync(response);
             }
         }
     }

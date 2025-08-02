@@ -14,5 +14,7 @@ namespace QuickBill.Infrastructure
         Task<Guid> CreateAsync(UserDto user);
         Task<bool> UpdateAsync(UserDto user);
         Task<bool> DeleteAsync(Guid id);
+
+        Task<UserDto?> GetByEmailAsync(string email);
     }
 }

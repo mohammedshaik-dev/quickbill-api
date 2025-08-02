@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using QuickBill.Application;
 using QuickBill.Domain.DTOs;
 using QuickBill.Domain.Models.Common;
@@ -6,6 +7,7 @@ using QuickBill.Domain.Models.Common;
 
 namespace QuickBill.Api.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class InvoicesController : ControllerBase

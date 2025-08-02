@@ -42,5 +42,12 @@ namespace QuickBill.Infrastructure
             var rows = await _connection.ExecuteAsync(UserQueries.SoftDelete, new { Id = id });
             return rows > 0;
         }
+
+        public async Task<UserDto?> GetByEmailAsync(string email)
+        {
+            var sql = UserQueries.GetByEmail;
+            var param = new { Email = email };
+            return await _connection.QueryFirstOrDefaultAsync<UserDto>(sql, param);
+        }
     }
 }
