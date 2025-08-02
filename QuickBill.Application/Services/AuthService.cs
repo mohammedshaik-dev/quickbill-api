@@ -1,24 +1,30 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Google.Apis.Auth;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using QuickBill.Domain;
+using QuickBill.Domain.DTOs;
+using QuickBill.Domain.GoogleDTOs;
+using QuickBill.Domain.Models.Common;
+using QuickBill.Infrastructure;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using QuickBill.Domain;
-using QuickBill.Domain.Models.Common;
-using QuickBill.Infrastructure;
-using QuickBill.Domain.DTOs;
-using Microsoft.Extensions.Options;
 
 namespace QuickBill.Application.Services
 {
-    public class AuthService : IAuthService {
+    public class AuthService : IAuthService
+    {
 
         private readonly IUserRepository _userRepository;
         private readonly JwtSettings _jwtSettings;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserRepository userRepository, IOptions<JwtSettings> jwtSettings)
+        public AuthService(IUserRepository userRepository, IOptions<JwtSettings> jwtSettings, ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _jwtSettings = jwtSettings.Value;
+            _logger = logger;
         }
 
         public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginDto)
@@ -70,6 +76,55 @@ namespace QuickBill.Application.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public async Task<GoogleLoginResponseDto?> LoginWithGoogleAsync(string idToken)
+        {
+
+            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+
+            var email = payload.Email;
+            var name = payload.Name;
+
+            _logger.LogInformation("Google token validated for email: {Email}", email);
+
+            var existingUser = await _userRepository.GetByEmailAsync(email);
+            if (existingUser == null)
+            {
+                _logger.LogInformation("New Google user. Creating user in DB...");
+
+                var newUser = new UserDto
+                {
+                    Id = Guid.NewGuid(),
+                    Name = name,
+                    Email = email,
+                    Role = "User",
+                    IsActive = true,
+                    IsDeleted = false,
+                    PasswordHash = "GoogleAuth" // placeholder (won’t be used)
+                };
+
+                var createdUserId = await _userRepository.CreateAsync(newUser);
+                newUser.Id = createdUserId;
+                existingUser = newUser;
+
+                _logger.LogInformation("User created with ID: {UserId}", createdUserId);
+            }
+
+            var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiresInMinutes);
+            var token = GenerateJwtToken(existingUser, expiresAt);
+
+            _logger.LogInformation("JWT generated for user: {Email}", email);
+
+            return new GoogleLoginResponseDto
+            {
+                UserId = existingUser.Id,
+                Email = existingUser.Email,
+                Role = existingUser.Role,
+                Token = token,
+                TokenExpiresAt = expiresAt
+            };
+
         }
     }
 }

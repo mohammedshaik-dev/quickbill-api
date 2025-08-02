@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using QuickBill.Application;
 using QuickBill.Domain;
+using QuickBill.Domain.GoogleDTOs;
 using QuickBill.Domain.Models.Common;
 using System.Net;
 
@@ -51,5 +52,30 @@ namespace QuickBill.Api.Controllers
                 Timestamp = DateTime.UtcNow
             });
         }
+
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request)
+        {
+            var result = await _authService.LoginWithGoogleAsync(request.IdToken);
+            if (result == null)
+                return BadRequest(new ApiResponse<string>
+                {
+                    Status = HttpStatusCode.BadRequest.ToString(),
+                    Code = (int)HttpStatusCode.BadRequest,
+                    Message = "Invalid Google login",
+                    Data = null,
+                    Timestamp = DateTime.UtcNow
+                });
+
+            return Ok(new ApiResponse<GoogleLoginResponseDto>
+            {
+                Status = HttpStatusCode.OK.ToString(),
+                Code = (int)HttpStatusCode.OK,
+                Message = "Login successful",
+                Data = result,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
     }
 }
