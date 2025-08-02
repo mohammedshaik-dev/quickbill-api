@@ -6,7 +6,9 @@ using QuickBill.Application.Services;
 using QuickBill.Domain.Models.Common;
 using QuickBill.Infrastructure;
 using System.Text;
+using DotNetEnv;
 
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 

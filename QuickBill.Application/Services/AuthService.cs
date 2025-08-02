@@ -33,7 +33,7 @@ namespace QuickBill.Application.Services
             if (user == null || user.IsDeleted || !user.IsActive)
                 return null;
 
-            if (!VerifyPassword(loginDto.Password, user.PasswordHash))
+            if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
                 return null;
 
             var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiresInMinutes);
@@ -46,12 +46,6 @@ namespace QuickBill.Application.Services
                 Token = token,
                 ExpiresAt = expiresAt
             };
-        }
-
-        private bool VerifyPassword(string plain, string hash)
-        {
-            // 🔐 For demo: plain text check. Replace with hash validation.
-            return plain == hash;
         }
 
         private string GenerateJwtToken(UserDto user, DateTime expiresAt)

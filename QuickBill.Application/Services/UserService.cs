@@ -18,10 +18,16 @@ namespace QuickBill.Application
 
         public async Task<UserDto?> GetByIdAsync(Guid id) => await _repository.GetByIdAsync(id);
 
-        public async Task<Guid> CreateAsync(UserDto user) => await _repository.CreateAsync(user);
+        public async Task<Guid> CreateAsync(UserDto user)
+        {
+            // Hash the password before saving
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
+            return await _repository.CreateAsync(user);
+        }
 
         public async Task<bool> UpdateAsync(UserDto user) => await _repository.UpdateAsync(user);
 
         public async Task<bool> DeleteAsync(Guid id) => await _repository.DeleteAsync(id);
+
     }
 }
