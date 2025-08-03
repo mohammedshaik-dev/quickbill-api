@@ -1,0 +1,125 @@
+﻿using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using QuickBill.Domain.DTOs;
+
+namespace QuickBill.Application.Document
+{
+    public class InvoiceDocument : IDocument
+    {
+        private readonly InvoicePdfDto _invoice;
+        private readonly List<InvoiceItemDto> _items;
+        private readonly string _logoPath;
+
+        public InvoiceDocument(InvoicePdfDto invoice, List<InvoiceItemDto> items, string logoPath)
+        {
+            _invoice = invoice;
+            _items = items;
+            _logoPath = logoPath;
+        }
+
+        public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
+
+        public void Compose(IDocumentContainer container)
+        {
+            container.Page(page =>
+            {
+                page.Margin(30);
+                page.Size(PageSizes.A4);
+                page.PageColor(Colors.White);
+                page.DefaultTextStyle(x => x.FontSize(12));
+
+                // Header
+                page.Header().Row(row =>
+                {
+                    //Logo Section
+                    row.ConstantItem(150).PaddingRight(10).Column(col =>
+                    {
+                        if (File.Exists(_logoPath))
+                        {
+                            var image = Image.FromFile(_logoPath);
+                            col.Item().Height(50).Image(image);
+                        }
+                    });
+
+                    // Invoice info
+                    row.RelativeItem().Column(col =>
+                    {
+                        col.Item().AlignRight().Text("INVOICE")
+                            .FontSize(22)
+                            .Bold()
+                            .FontColor(Colors.Blue.Medium);
+
+                        col.Item().AlignRight().Text($"Invoice #: {_invoice.InvoiceNumber}");
+                        col.Item().AlignRight().Text($"Issued: {_invoice.DateIssued:yyyy-MM-dd}");
+                        col.Item().AlignRight().Text($"Due: {_invoice.DueDate?.ToString("yyyy-MM-dd") ?? "-"}");
+                    });
+                });
+
+                // ---------- Client Info ----------
+                page.Content().PaddingVertical(20).Column(col =>
+                {
+                    col.Spacing(10);
+
+                    col.Item().Text("Bill To:").Bold();
+                    col.Item().Text(_invoice.ClientName);
+                    col.Item().Text(_invoice.ClientEmail);
+                    col.Item().Text(_invoice.ClientPhone);
+                    col.Item().Text(_invoice.ClientAddress);
+
+                    // ---------- Separator ----------
+                    col.Item().PaddingVertical(10).BorderBottom(1).BorderColor(Colors.Grey.Lighten2);
+
+                    // Table
+                    col.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(cols =>
+                        {
+                            cols.RelativeColumn(5); // Description
+                            cols.RelativeColumn(2); // Quantity
+                            cols.RelativeColumn(2); // Unit Price
+                            cols.RelativeColumn(2); // Total
+                        });
+
+                        // Header Row
+                        table.Header(header =>
+                        {
+                            header.Cell().Text("Description").Bold().BackgroundColor(Colors.Grey.Lighten3);
+                            header.Cell().AlignRight().Text("Qty").Bold().BackgroundColor(Colors.Grey.Lighten3);
+                            header.Cell().AlignRight().Text("Unit Price").Bold().BackgroundColor(Colors.Grey.Lighten3);
+                            header.Cell().AlignRight().Text("Total").Bold().BackgroundColor(Colors.Grey.Lighten3);
+                        });
+
+                        // Data Rows
+                        foreach (var item in _items)
+                        {
+                            table.Cell().Text(item.Description);
+                            table.Cell().AlignRight().Text(item.Quantity.ToString());
+                            table.Cell().AlignRight().Text($"{item.UnitPrice:C}");
+                            table.Cell().AlignRight().Text($"{item.Total:C}");
+                        }
+                    });
+
+                    // ---------- Total ----------
+                    col.Item().AlignRight().PaddingTop(10).Text($"Total: {_invoice.TotalAmount:C}")
+                        .FontSize(14).Bold().FontColor(Colors.Black);
+
+                    // ---------- Notes (optional) ----------
+                    if (!string.IsNullOrWhiteSpace(_invoice.Notes))
+                    {
+                        col.Item().PaddingTop(20).Text("Notes:").Bold();
+                        col.Item().Text(_invoice.Notes);
+                    }
+
+                });
+
+                // Footer
+                page.Footer().AlignCenter().Text(text =>
+                {
+                    text.Span("Generated by QuickBill • ").FontSize(10).FontColor(Colors.Grey.Darken2);
+                    text.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")).FontSize(10).FontColor(Colors.Grey.Darken2);
+                });
+            });
+        }
+    }
+}
