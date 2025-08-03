@@ -1,19 +1,21 @@
+using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using QuestPDF.Infrastructure;
 using QuickBill.Application;
 using QuickBill.Application.Services;
 using QuickBill.Domain.Models.Common;
 using QuickBill.Infrastructure;
 using System.Text;
-using DotNetEnv;
 
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+// Set license before app starts
+QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -65,6 +67,9 @@ builder.Services.AddScoped<IInvoiceItemService, InvoiceItemService>();
 builder.Services.AddScoped<IInvoiceItemRepository, InvoiceItemRepository>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
+builder.Services.AddScoped<IInvoicePdfRepository, InvoicePdfRepository>();
 
 builder.Services.AddAuthorization();
 
