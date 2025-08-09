@@ -4,6 +4,7 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using QuickBill.Application.Document;
 using QuickBill.Infrastructure;
+using Microsoft.Extensions.Configuration;
 
 
 namespace QuickBill.Application
@@ -12,11 +13,13 @@ namespace QuickBill.Application
     {
         private readonly IInvoicePdfRepository _repository;
         private readonly ILogger<InvoicePdfService> _logger;
+        private readonly IConfiguration _configuration;
 
-        public InvoicePdfService(IInvoicePdfRepository repository, ILogger<InvoicePdfService> logger)
+        public InvoicePdfService(IInvoicePdfRepository repository, ILogger<InvoicePdfService> logger, IConfiguration configuration)
         {
             _repository = repository;
             _logger = logger;
+            _configuration = configuration;
         }
 
         public async Task<byte[]> GenerateInvoicePdfAsync(Guid invoiceId)
@@ -27,7 +30,19 @@ namespace QuickBill.Application
 
             var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Quick_Bill_Logo.png");
 
-            var document = new InvoiceDocument(invoice, invoice.Items, logoPath);
+            var companyName = _configuration["Company:Name"] ?? string.Empty;
+            var companyAddress = _configuration["Company:Address"] ?? string.Empty;
+            var companyEmail = _configuration["Company:Email"] ?? string.Empty;
+            var companyPhone = _configuration["Company:Phone"] ?? string.Empty;
+
+            var document = new InvoiceDocument(
+                invoice,
+                invoice.Items,
+                logoPath,
+                companyName,
+                companyAddress,
+                companyEmail,
+                companyPhone);
 
             return document.GeneratePdf();
         }
