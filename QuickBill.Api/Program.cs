@@ -71,6 +71,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
 builder.Services.AddScoped<IInvoicePdfRepository, InvoicePdfRepository>();
 
+builder.Services.AddScoped<IPaymentDetailsService, PaymentDetailsService>();
+builder.Services.AddScoped<IPaymentDetailsRepository, PaymentDetailsRepository>();
+ 
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
